@@ -1,0 +1,19 @@
+<s> hello </s>
+<s> hello how are you </s>
+<s> hello play music </s>
+<s> hello play dance </s>
+<s> hello play radio </s>
+<s> hello play </s>
+<s> hello play </s>
+<s> play music </s>
+<s> play radio </s>
+<s> play dance </s>
+<s> play something </s>
+<s> play </s>
+<s> mute please </s>
+<s> unmute please </s>
+<s> please mute </s>
+<s> please unmute </s>
+<s> stop </s>
+<s> mute </s>
+<s> unmute </s>
