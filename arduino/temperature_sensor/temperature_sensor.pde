@@ -1,4 +1,24 @@
+
+void buzzAtFrequency(int freq) {
+  pinMode(17, OUTPUT);
+  for (int i = 0; i < 1000; ++i ) {
+    
+digitalWrite(17, HIGH);
+delayMicroseconds(1000000 / freq);
+  digitalWrite(17, LOW);
+  }
+  
+}
+
 void setup() {
+  buzzAtFrequency(27);
+  delay(100);
+  buzzAtFrequency(30);
+  delay(100);
+  buzzAtFrequency(32);
+  delay(100);
+  buzzAtFrequency(36);
+  
   pinMode(3, INPUT);
   Serial.begin(9600);
   Serial.println("Initialising.");
@@ -74,8 +94,7 @@ void loop() {
   Serial.print(ti);
   Serial.print(".");
   Serial.print(td);
-  Serial.print(" ");
-  Serial.println(digitalRead(3));
+  Serial.println(" ");
   
   byte csum_check = hi +  hd + ti + td;
 }

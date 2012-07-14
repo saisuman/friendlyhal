@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>Friendly HAL</title>
+    <script src="closure/closure/goog/base.js"></script>
+    <script src="ui.js"></script>
+    <script>
+      new friendlyhal.ControlPanel().start();
+    </script>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+  </head>
+
+  <body>
+    <h1>Friendly HAL</h1>
+
+    <div id="panel1" class="panel">
+      <div class="paneltitle">Title1</div>
+      Here are some more lines
+    </div>
+
+    <div id="panel2" class="panel">
+      <div class="paneltitle">Title2 of a nice panel</div>
+      Here is a few lines of text<br>
+      Here are a few more lines.
+    </div>
+
+    <div class="applog">
+      <div class="paneltitle">Application Log</div>
+      <div id="applog" style="overflow: auto">
+      </div>
+    </div>
+
+    <div class="eventlog">
+      <div class="paneltitle">HAL Event Log</div>
+      <div id="eventlog" style="overflow: auto">
+      </div>
+    </div>
+    
+  </body>
+</html>
