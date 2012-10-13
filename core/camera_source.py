@@ -2,7 +2,7 @@ import sys
 import os
 
 class FFMpegStream(object):
-    DEFAULT_CAMERA_DEVICE = '/dev/video0'
+    DEFAULT_CAMERA_DEVICE = '/dev/video3'
     INPUT_FORMAT = 'video4linux2'
     INPUT_RESOLUTION = '640x480'
     INPUT_VIDEO_BITRATE = 1048576
@@ -12,8 +12,8 @@ class FFMpegStream(object):
     def __init__(self, camera_device=None):
         self.camera_device = camera_device if camera_device else self.DEFAULT_CAMERA_DEVICE
 
-    def start_stream(self):
-        ffmpeg_cmd = '/usr/local/bin/ffmpeg -f %s -t %s -b:v %s -i %s -vcodec %s -b:v %s -f %s - ' % (
+    def start_stream(self, req):
+        ffmpeg_cmd = 'avconv -f %s -t %s -b:v %s -i %s -vcodec %s -b:v %s -f %s - ' % (
             self.INPUT_FORMAT,
             self.INPUT_RESOLUTION,
             self.INPUT_VIDEO_BITRATE,
@@ -23,15 +23,11 @@ class FFMpegStream(object):
             self.OUTPUT_VIDEO_FORMAT)
         print 'DEBUG: Executing ffmpeg cmd: %s' % ffmpeg_cmd
         _ignored, self.mpegts_stream, err = os.popen3(ffmpeg_cmd)
-        outfile = open('/tmp/crap', 'w')
         while True:
             data = self.mpegts_stream.read(65536)
             if not data:
                 print 'Finished, read %d bytees.' % len(data)
                 break
-            outfile.write(data)
+            req.write(data, flush=1)
             print 'OK: Wrote %d bytes.' % len(data)
 
-    def 
-
-FFMpegStream().start_stream()
