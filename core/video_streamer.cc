@@ -80,6 +80,8 @@ void VideoSource::Start() {
   CHECK_ZERO(pipe2(stderrpipe, O_NONBLOCK));
   int stdoutpipe[2];
   CHECK_ZERO(pipe2(stdoutpipe, O_NONBLOCK));
+  ok("Created a pipe to %d, %d and %d, %d.\n",
+     stdoutpipe[0], stdoutpipe[1], stderrpipe[0], stderrpipe[1]);
   
   if (fork() != 0) {
     transcoder_stdout_ = stdoutpipe[0];
@@ -87,8 +89,12 @@ void VideoSource::Start() {
     ReadAndBroadcast();
   } else {
     // In the child, we'll replace stdout and stderr.
-    CHECK_NONNEG(dup2(2, stderrpipe[1]));
-    CHECK_NONNEG(dup2(1, stdoutpipe[1]));
+
+    ok("Hello, this is the child.\n");
+    close(2);
+    close(1);
+    CHECK_NONNEG(dup(stdoutpipe[1]));
+    CHECK_NONNEG(dup(stderrpipe[1]));
     // Now we exec away, and read the output.
     execl("/usr/bin/avconv",
 	  "/usr/bin/avconv",
@@ -103,7 +109,7 @@ void VideoSource::Start() {
 
 void VideoSource::ReadAndBroadcast() {
   char stderrbuf[4096];
-  char videobuf[1048576];
+  char videobuf[4096];
 
   int stderr_bufbytes = 0;
   int video_bufbytes = 0;
@@ -111,18 +117,21 @@ void VideoSource::ReadAndBroadcast() {
   while (true) {
     int bread = read(transcoder_stderr_, &stderrbuf, sizeof(stderrbuf));
     if (bread == -1 && WouldBlock()) {
-      // pass
+      //ok("Stderr would have blocked, continuing.\n");
     } else if (bread == -1) {
       err("Could not read transcoder's stderr.\n");
     } else if (bread > 0) {
-      err("Transcoder wrote err output: %s\b", stderrbuf);
+      // err("Transcoder wrote err output: %s\b\n", stderrbuf);
     }
 
     bread = read(transcoder_stdout_, &videobuf, sizeof(videobuf));
     if (bread == -1 && WouldBlock()) {
-      // pass
+      // ok("Stdout would have blocked, continuing.\n");
+      continue;
     } else if (bread == -1) {
-      fatal("Couldn't read transcoder output.");
+      fatal("Couldn't read transcoder output.\n");
+    } else if (bread == 0) {
+      continue;
     }
    
     set<int> fds = streamer_->GetSockets();
@@ -130,10 +139,12 @@ void VideoSource::ReadAndBroadcast() {
 	 it != fds.end(); ++it) {
       int bwritten = write(*it, videobuf, bread);
       if (bwritten == -1 && WouldBlock()) {
-	err("Stream %d is falling behind.", *it);
+	err("Stream %d is falling behind.\n", *it);
       } else if (bwritten == -1) {
-	err("Stream %d had an error. Closing.", *it);
+	err("Stream %d had an error. Closing.\n", *it);
 	streamer_->CloseAndRemove(*it);
+      } else {
+	ok("Wrote %d bytes out to socket %d.\n", bwritten, *it);
       }
     }
   }
@@ -154,6 +165,7 @@ void VideoStreamer::Start() {
   CHECK_ZERO(bind(server_socket_, (struct sockaddr*)&bind_addr, sizeof(bind_addr)));
   CHECK_ZERO(listen(server_socket_, 10));
   ok("Started, now listening...\n");
+  Serve();
 }
 
 void VideoStreamer::Serve() {
@@ -194,7 +206,6 @@ int main(int argc, char **argv) {
   pthread_t streamer_thread;
   CHECK_ZERO(pthread_create(&streamer_thread, NULL, &StartStreamer,
 			    (void*)&streamer));
-  
   VideoSource source(&streamer);
   source.Start();
   return 0;
