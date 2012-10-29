@@ -26,6 +26,7 @@ using std::set;
 void checkFailed(int line, const char *file) {
   fprintf(stderr, "CHECK_FAILED: At %s:%d. Error:%s.",
 	  file, line, strerror(errno));
+  exit(-1);
 }
 
 #define WouldBlock() (errno == EWOULDBLOCK || errno == EAGAIN)
@@ -137,7 +138,7 @@ void VideoSource::ReadAndBroadcast() {
     set<int> fds = streamer_->GetSockets();
     for (set<int>::const_iterator it = fds.begin();
 	 it != fds.end(); ++it) {
-      int bwritten = write(*it, videobuf, bread);
+      int bwritten = send(*it, videobuf, bread, MSG_NOSIGNAL);
       if (bwritten == -1 && WouldBlock()) {
 	err("Stream %d is falling behind.\n", *it);
       } else if (bwritten == -1) {
@@ -182,6 +183,12 @@ void VideoStreamer::Serve() {
 void VideoStreamer::NewStream(int fd) {
   MutexLock lock(&socket_lock_);
   ok("Started a new stream: %d\n", fd);
+  // First write out the HTTP Header.
+  string http_output("HTTP/1.0 200 OK\n");
+  http_output.append("Content-type: application/octet-stream\n");
+  http_output.append("Cache-Control: no-cache\n\n");
+  send(fd, http_output.c_str(), http_output.size(), MSG_NOSIGNAL);
+  ok("Wrote http header for new stream.\n");
   client_sockets_.insert(fd);
 }
 
@@ -191,9 +198,9 @@ void VideoStreamer::CloseAndRemove(int fd) {
   ok("Removed socket: %d\n", fd);
 }
 
-void* StartStreamer(void *streamer) {
-  ok("Kicking off streamer in new thread.\n");
-  ((VideoStreamer*)streamer)->Start();
+void* StartSource(void *source) {
+  ok("Kicking off source in new thread.\n");
+  ((VideoSource*)source)->Start();
   return NULL;
 }
 
@@ -203,10 +210,10 @@ int main(int argc, char **argv) {
   const int port = atoi(argv[2]);
 
   VideoStreamer streamer(camera_device, port);
-  pthread_t streamer_thread;
-  CHECK_ZERO(pthread_create(&streamer_thread, NULL, &StartStreamer,
-			    (void*)&streamer));
   VideoSource source(&streamer);
-  source.Start();
+  pthread_t source_thread;
+  CHECK_ZERO(pthread_create(&source_thread, NULL, &StartSource,
+			    (void*)&source));
+  streamer.Start();
   return 0;
 }
