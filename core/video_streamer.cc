@@ -1,4 +1,6 @@
+#include <list>
 #include <string>
+#include <vector>
 #include <set>
 
 #include <stdlib.h>
@@ -14,12 +16,15 @@
 
 using std::string;
 using std::set;
+using std::list;
+using std::pair;
+using std::vector;
 
-
-#define ok(...) fprintf(stdout, "OK: " __VA_ARGS__)
+#define ok(...) { fprintf(stdout, "OK: " __VA_ARGS__); }
 #define fatal(...) { fprintf(stderr, "FATAL: " __VA_ARGS__); exit(-1); }
 #define err(...) fprintf(stderr, "ERROR: " __VA_ARGS__)
 
+#define CHECK(x) if (!(x)) { checkFailed(__LINE__, __FILE__); }
 #define CHECK_NONNEG(x) if ((x) < 0) { checkFailed(__LINE__, __FILE__); }
 #define CHECK_ZERO(x) if ((x) != 0) { checkFailed(__LINE__, __FILE__); }
 
@@ -43,25 +48,95 @@ private:
   pthread_mutex_t *pmutex_;
 };
 
+#define PER_SOCKET_BUFFER_LIMIT (1048576 * 4)
+class BufferedConnection {
+public:
+  BufferedConnection(int sockfd)
+    : sockfd_(sockfd), start_offset_(0),
+      accumulated_bytes_(0) {}
+  ~BufferedConnection() {
+    ok("Closing connection %d.\n", sockfd_);
+    PurgeBuffers();
+  }
+  bool Send(const char *buffer, int bytes) {
+    if (accumulated_bytes_ + bytes > PER_SOCKET_BUFFER_LIMIT) {
+      err("Socket %d is falling behind. Dropping %d bytes.\n",
+	  sockfd_, accumulated_bytes_);
+      PurgeBuffers();
+    }
+
+    // Copy this buffer over. TODO: Maybe optimise the copy away
+    // for the majority case where you can send right away?
+    char *bufcpy = new char[bytes];
+    memcpy(bufcpy, buffer, bytes);
+    buffers_.push_back(std::make_pair(bufcpy, bytes));
+    accumulated_bytes_ += bytes;
+    while (buffers_.size() > 0) {
+      const char *sendbuf = buffers_.begin()->first + start_offset_;
+      const size_t sendbufsize = buffers_.begin()->second - start_offset_;
+      int ret = send(sockfd_, sendbuf, sendbufsize,
+		     MSG_DONTWAIT | MSG_NOSIGNAL);
+      if (ret == -1 && WouldBlock()) {
+	// Would have blocked. Get out.
+	ok("Would have blocked, accumulating %d and continuing.\n",
+	   accumulated_bytes_);
+	return true;
+      } else if (ret == -1) {
+	// Problem. Socket needs to be closed.
+	err("Socket %d will need to be closed.\n", sockfd_);
+	return false;
+      }
+      // Some bytes were written. If it's all of it, continue.
+      if (ret < sendbufsize) {
+	ok("Socket %d wrote only %d bytes, accumulating %d.\n",
+	   sockfd_, ret, accumulated_bytes_ - ret);
+	start_offset_ += ret;
+	return true;
+      }
+      // No errors, and it means we wrote all of it out. Let's
+      // pop that buffer and write out the next one.
+      start_offset_ = 0;
+      accumulated_bytes_ -= sendbufsize;
+      delete buffers_.begin()->first;
+      buffers_.pop_front();
+    }
+    // Wrote off all pending buffers.
+    return true;
+  }
+
+private:
+  void PurgeBuffers() {
+    ok("Purging %d bytes of buffers.\n", accumulated_bytes_);
+    while (buffers_.size() > 0) {
+      delete buffers_.begin()->first;
+      buffers_.pop_front();
+    }
+    accumulated_bytes_ = 0; 
+    start_offset_ = 0;
+  }
+  int sockfd_;
+  char buffer_[1048576 * 4];  // 4 MB buffer.
+  int start_offset_;
+  int accumulated_bytes_;
+  list<pair<char *, size_t> > buffers_;
+};
+
 class VideoStreamer {
 public:
-  VideoStreamer(const string &camera_device, int port)
-    : camera_device_(camera_device), port_(port) {
+  VideoStreamer(int port) : port_(port) {
     pthread_mutex_init(&socket_lock_, NULL);
   }
 
   void Start();
-  void CloseAndRemove(int fd);
-  set<int> GetSockets() { return client_sockets_; }  // UGH.
+  void Broadcast(const char *buf, int bytes);
 
 private:
   void Serve();
   void NewStream(int fd);
   int port_;
-  const string &camera_device_;
   int server_socket_;
   pthread_mutex_t socket_lock_;
-  set<int> client_sockets_;
+  vector<BufferedConnection*> connections_;
 };
 
 class VideoSource {
@@ -75,79 +150,55 @@ private:
   VideoStreamer *streamer_;
 };
 
+void VideoStreamer::Broadcast(const char *buf, int bytes) {
+  MutexLock lock(&socket_lock_);
+  list<int> offsets_to_remove;
+  for (int i = 0; i < connections_.size(); ++i) {
+    if (!connections_[i]->Send(buf, bytes)) {
+      // Means this needs to be removed.
+      offsets_to_remove.push_front(i);
+    }
+  }
+  while (offsets_to_remove.size() > 0) {
+    int offset = *offsets_to_remove.begin();
+    delete connections_[offset];
+    connections_.erase(connections_.begin() + offset);
+    offsets_to_remove.pop_front();
+  }    
+}
+
 void VideoSource::Start() {
-  // Create a pipe first.
-  int stderrpipe[2];
-  CHECK_ZERO(pipe2(stderrpipe, O_NONBLOCK));
   int stdoutpipe[2];
   CHECK_ZERO(pipe2(stdoutpipe, O_NONBLOCK));
-  ok("Created a pipe to %d, %d and %d, %d.\n",
-     stdoutpipe[0], stdoutpipe[1], stderrpipe[0], stderrpipe[1]);
   
   if (fork() != 0) {
     transcoder_stdout_ = stdoutpipe[0];
-    transcoder_stderr_ = stderrpipe[0];
     ReadAndBroadcast();
   } else {
     // In the child, we'll replace stdout and stderr.
 
     ok("Hello, this is the child.\n");
-    close(2);
     close(1);
     CHECK_NONNEG(dup(stdoutpipe[1]));
-    CHECK_NONNEG(dup(stderrpipe[1]));
     // Now we exec away, and read the output.
-    execl("/usr/bin/avconv",
-	  "/usr/bin/avconv",
-	  "-f", "video4linux2",
-	  "-i", "/dev/video3",
-	  "-vcodec", "mpeg4",
-	  "-f", "mpegts",
-	  "-", NULL);
+    execlp("video_source", "video_source", NULL);
     fatal("exec() actually returned!");
   }
 }
 
 void VideoSource::ReadAndBroadcast() {
-  char stderrbuf[4096];
   char videobuf[4096];
 
-  int stderr_bufbytes = 0;
-  int video_bufbytes = 0;
-
   while (true) {
-    int bread = read(transcoder_stderr_, &stderrbuf, sizeof(stderrbuf));
+    int bread = read(transcoder_stdout_, &videobuf, sizeof(videobuf));
     if (bread == -1 && WouldBlock()) {
-      //ok("Stderr would have blocked, continuing.\n");
-    } else if (bread == -1) {
-      err("Could not read transcoder's stderr.\n");
-    } else if (bread > 0) {
-      // err("Transcoder wrote err output: %s\b\n", stderrbuf);
-    }
-
-    bread = read(transcoder_stdout_, &videobuf, sizeof(videobuf));
-    if (bread == -1 && WouldBlock()) {
-      // ok("Stdout would have blocked, continuing.\n");
       continue;
     } else if (bread == -1) {
       fatal("Couldn't read transcoder output.\n");
     } else if (bread == 0) {
       continue;
     }
-   
-    set<int> fds = streamer_->GetSockets();
-    for (set<int>::const_iterator it = fds.begin();
-	 it != fds.end(); ++it) {
-      int bwritten = send(*it, videobuf, bread, MSG_NOSIGNAL);
-      if (bwritten == -1 && WouldBlock()) {
-	err("Stream %d is falling behind.\n", *it);
-      } else if (bwritten == -1) {
-	err("Stream %d had an error. Closing.\n", *it);
-	streamer_->CloseAndRemove(*it);
-      } else {
-	ok("Wrote %d bytes out to socket %d.\n", bwritten, *it);
-      }
-    }
+    streamer_->Broadcast(videobuf, bread);
   }
 }
 
@@ -185,17 +236,11 @@ void VideoStreamer::NewStream(int fd) {
   ok("Started a new stream: %d\n", fd);
   // First write out the HTTP Header.
   string http_output("HTTP/1.0 200 OK\n");
-  http_output.append("Content-type: application/octet-stream\n");
+  http_output.append("Content-type: video/MP2T\n");
   http_output.append("Cache-Control: no-cache\n\n");
   send(fd, http_output.c_str(), http_output.size(), MSG_NOSIGNAL);
   ok("Wrote http header for new stream.\n");
-  client_sockets_.insert(fd);
-}
-
-void VideoStreamer::CloseAndRemove(int fd) {
-  MutexLock lock(&socket_lock_);
-  client_sockets_.erase(fd);
-  ok("Removed socket: %d\n", fd);
+  connections_.push_back(new BufferedConnection(fd));
 }
 
 void* StartSource(void *source) {
@@ -206,10 +251,9 @@ void* StartSource(void *source) {
 
 int main(int argc, char **argv) {
 
-  const char *camera_device = argv[1];
-  const int port = atoi(argv[2]);
+  const int port = atoi(argv[1]);
 
-  VideoStreamer streamer(camera_device, port);
+  VideoStreamer streamer(port);
   VideoSource source(&streamer);
   pthread_t source_thread;
   CHECK_ZERO(pthread_create(&source_thread, NULL, &StartSource,
