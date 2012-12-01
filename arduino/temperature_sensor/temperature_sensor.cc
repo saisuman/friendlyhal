@@ -1,25 +1,9 @@
+#define __AVR_ATmega328P__
 
-void buzzAtFrequency(int freq) {
-  pinMode(17, OUTPUT);
-  for (int i = 0; i < 1000; ++i ) {
-    
-digitalWrite(17, HIGH);
-delayMicroseconds(1000000 / freq);
-  digitalWrite(17, LOW);
-  }
-  
-}
+#include "Arduino.h"
 
 void setup() {
-  buzzAtFrequency(27);
-  delay(100);
-  buzzAtFrequency(30);
-  delay(100);
-  buzzAtFrequency(32);
-  delay(100);
-  buzzAtFrequency(36);
-  
-  pinMode(3, INPUT);
+  pinMode(2, INPUT);
   Serial.begin(9600);
   Serial.println("Initialising.");
   Serial.println("Finished init."); 
@@ -61,7 +45,7 @@ int get_byte(boolean* b, int num) {
 void loop() {  
   pinMode(2, OUTPUT);
   digitalWrite(2, HIGH);
-  delay(4000);
+  delay(1000);
   digitalWrite(2, LOW);
   delay(18);
   digitalWrite(2, HIGH);
@@ -98,4 +82,3 @@ void loop() {
   
   byte csum_check = hi +  hd + ti + td;
 }
-
