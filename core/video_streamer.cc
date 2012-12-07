@@ -234,12 +234,6 @@ void VideoStreamer::Serve() {
 void VideoStreamer::NewStream(int fd) {
   MutexLock lock(&socket_lock_);
   ok("Started a new stream: %d\n", fd);
-  // First write out the HTTP Header.
-  string http_output("HTTP/1.0 200 OK\n");
-  http_output.append("Content-type: video/MP2T\n");
-  http_output.append("Cache-Control: no-cache\n\n");
-  send(fd, http_output.c_str(), http_output.size(), MSG_NOSIGNAL);
-  ok("Wrote http header for new stream.\n");
   connections_.push_back(new BufferedConnection(fd));
 }
 
