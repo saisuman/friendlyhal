@@ -4,7 +4,6 @@
     <script src="closure/closure/goog/base.js"></script>
     <script src="ui.js"></script>
     <script>
-      new friendlyhal.ControlPanel().start();
     </script>
     <link rel="stylesheet" type="text/css" href="style.css"/>
   </head>
@@ -13,8 +12,20 @@
     <h1>Friendly HAL</h1>
 
     <div id="panel1" class="panel">
-      <div class="paneltitle">Title1</div>
-      Here are some more lines
+      <div class="paneltitle">Video</div>
+      <img class="videofeed"
+	   src="http://192.168.1.119:8090/?action=stream" />
+      <div class="buttonpanel">
+	<!--Panel only for buttons.-->
+	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_UP)"
+	     src="up.png"/>
+	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_DOWN)"
+	     src="down.png"/>
+	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_LEFT)"
+	     src="previous.png"/>
+	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_RIGHT)"
+	     src="next.png"/>
+      </div>
     </div>
 
     <div id="panel2" class="panel">

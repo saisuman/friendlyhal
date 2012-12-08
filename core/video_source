@@ -1,9 +1,0 @@
-#!/bin/bash
-/usr/bin/avconv \
-	-f video4linux2 \
-	-i /dev/video3 \
-	-vcodec mpeg4 \
-	-b 1048576 \
-	-f mpegts \
-	-vf "drawtext=fontfile=/usr/share/fonts/truetype/Inconsolata.otf: text=\\'Stream Time %T %F\\': x=W-90: y=H-15: fontsize=14: fontcolor=white: shadowx=2: shadowy=2:" \
-		-
