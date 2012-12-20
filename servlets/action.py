@@ -3,18 +3,10 @@
 from mod_python import apache
 from core import controller
 
-def panleft(req):
-    controller.pan_left()
-    return apache.OK
-
-def panright(req):
-    controller.pan_right()
-    return apache.OK
-
 def panup(req):
-    controller.pan_up()
+    controller.ControllerClient.command(controller.PANUP)
     return apache.OK
 
 def pandown(req):
-    controller.pan_down()
+    controller.ControllerClient.command(controller.PANDOWN)
     return apache.OK
