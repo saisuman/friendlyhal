@@ -1,3 +1,4 @@
+#include "Arduino.h"
 /* The firmware that runs on the Arduino component of
  * the FriendlyHal project. It creates an event stream
  * from various sensors and error events and passes them
