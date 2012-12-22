@@ -138,9 +138,8 @@ applet/main.o: $(ARDUINO)/main.cpp
 	test -d applet || mkdir applet
 	$(CXX) -c $(ALL_CXXFLAGS) $(ARDUINO)/main.cpp  -o applet/main.o
 
-applet/friendlyhal.o: friendlyhal.ino
-	bash -c "echo '#include \"Arduino.h\"'; cat $(TARGET).ino" > $(TARGET).cc
-	$(CXX) -c $(ALL_C/XXFLAGS) friendlyhal.cc  -o applet/friendlyhal.o -DUBRRH $(CXXINCS) $(CXXDEFS)
+applet/friendlyhal.o: friendlyhal.cpp
+	$(CXX) -c $(ALL_C/XXFLAGS) friendlyhal.cpp -o applet/friendlyhal.o -DUBRRH $(CXXINCS) $(CXXDEFS)
 
 elf: applet/main.elf
 hex: applet/main.hex
@@ -234,9 +233,9 @@ applet/core.a: $(OBJ_MODULES)
 
 # Target: clean project.
 clean:
-	$(REMOVE) applet/main.hex applet/main.eep applet/main.cof applet/main.elf \
-	applet/main.map applet/main.sym applet/main.o applet/main.lss applet/core.a \
+	$(REMOVE) applet/* \
 	$(OBJ) $(LST) $(SRC:.c=.s) $(SRC:.c=.d) $(CXXSRC:.cpp=.s) $(CXXSRC:.cpp=.d)
+	rmdir applet
 
 .PHONY:	all build elf hex eep lss sym program coff extcoff clean applet_files sizebefore sizeafter
 

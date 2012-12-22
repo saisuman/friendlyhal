@@ -1,10 +1,10 @@
-#include "Arduino.h"
 /* The firmware that runs on the Arduino component of
  * the FriendlyHal project. It creates an event stream
  * from various sensors and error events and passes them
  * over the serial interface to the host board.
  */
 
+#include "Arduino.h"
 #include "HardwareSerial.h"
 #include "TempHumSensor.h"
 // #include "PIRSensor.h"
