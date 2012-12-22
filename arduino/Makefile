@@ -113,6 +113,8 @@ AVRDUDE = $(AVRDUDE_PATH)/avrdude
 REMOVE = rm -f
 MV = mv -f
 
+OBJ_DEPS=$(ARDUINO)/HardwareSerial.o $(ARDUINO)/Print.o TempHumSensor/TempHumSensor.o  $(ARDUINO)/wiring_digital.o
+
 # Define all object files.
 OBJ = $(SRC:.c=.o) $(CXXSRC:.cpp=.o) $(ASRC:.S=.o)
 OBJ_MODULES = $(C_MODULES:.c=.o) $(CXX_MODULES:.cpp=.o)
@@ -196,8 +198,8 @@ extcoff: main.elf
 
 # Link: create ELF output file from library.
 
-applet/main.elf: applet/main.o applet/core.a applet/friendlyhal.o TempHumSensor/TempHumSensor.o
-	$(LD) $(ALL_LDFLAGS) -o $@ applet/main.o applet/core.a applet/friendlyhal.o TempHumSensor/TempHumSensor.o
+applet/main.elf: applet/main.o applet/core.a applet/friendlyhal.o $(OBJ_DEPS)
+	$(LD) $(ALL_LDFLAGS) -o $@ applet/main.o applet/core.a applet/friendlyhal.o $(OBJ_DEPS)
 
 applet/core.a: $(OBJ_MODULES)
 	@for i in $(OBJ_MODULES); do echo $(AR) rcs applet/core.a $$i; $(AR) rcs applet/core.a $$i; done
