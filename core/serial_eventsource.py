@@ -10,9 +10,10 @@ class SerialEventSource(eventsource.EventSource):
     SOURCE_NAME = 'Serial Event Source'
 
     def __init__(self, callback_fn, serial_device=None):
-        self.callback_fn_ = callback_fn
-        self.serial_port_ = None
-        self.stop_ = False
+        self._callback_fn = callback_fn
+        self._serial_port = None
+        self._stop = False
+        self._accumulated_data = ''
 
     def start(self):
         self.serial_port_ = serial.Serial(SERIAL_DEVICE, SERIAL_BAUD)
@@ -22,7 +23,7 @@ class SerialEventSource(eventsource.EventSource):
             try:
                 if self.stop_:
                     return
-                self.accumulate_and_emit_(self.serial_port_.readline())
+                self._accumulate_and_emit(self.serial_port_.readline())
             except Exception, e:
                 self.stop_ = True
                 self.emit_stop_event(str(e))
@@ -30,19 +31,18 @@ class SerialEventSource(eventsource.EventSource):
             finally:
                 self.lock_.release()
 
-    def accumulate_and_emit_(self, line):
+    def _accumulate_and_emit(self, line):
         if line.empty():  # PROTOCOL: Empty line is end-of-message
-            if self.accumulated_data_.empty():
+            if self._accumulated_data.empty():
                 return  # Nothing to publish
             else:
-                self.emit(self.accumulated_data_)
-                self.accumulated_data_ = ''
+                self.emit(self._accumulated_data)
+                self._accumulated_data = ''
         else:
-            self.accumulated_data_ += line + '\n'
+            self._accumulated_data += line + '\n'
             
 
     def stop(self):
         self.lock_.acquire()
         self.stop_ = True
         self.emit_stop_event()
-        
