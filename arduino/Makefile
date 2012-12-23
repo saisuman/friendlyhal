@@ -45,6 +45,7 @@ $(ARDUINO)/WString.cpp \
 $(ARDUINO)/main.cpp \
 $(ARDUINO_LIB)/EEPROM/EEPROM.cpp \
 TempHumSensor/TempHumSensor.cpp \
+PIRSensor/PIRSensor.cpp
 
 CXX_APP = $(ARDUINO)/main.cpp
 MODULES = $(C_MODULES) $(CXX_MODULES)
@@ -69,7 +70,7 @@ CXXDEFS = -DF_CPU=$(F_CPU)L -DARDUINO=$(VERSION) -D__AVR_ATmega328P__
 
 # Place -I options here
 CINCS = -I$(ARDUINO)  -I$(VARIANTS) -I$(ARDUINO_LIB)
-CXXINCS = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB) -ITempHumSensor/
+CXXINCS = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB) -ITempHumSensor/ -IPIRSensor/
 
 # Compiler flag to set the C Standard level.
 # c89   - "ANSI" C
@@ -113,7 +114,7 @@ AVRDUDE = $(AVRDUDE_PATH)/avrdude
 REMOVE = rm -f
 MV = mv -f
 
-OBJ_DEPS=$(ARDUINO)/HardwareSerial.o $(ARDUINO)/Print.o TempHumSensor/TempHumSensor.o  $(ARDUINO)/wiring_digital.o
+OBJ_DEPS=$(ARDUINO)/HardwareSerial.o $(ARDUINO)/Print.o TempHumSensor/TempHumSensor.o PIRSensor/PIRSensor.o  $(ARDUINO)/wiring_digital.o
 
 # Define all object files.
 OBJ = $(SRC:.c=.o) $(CXXSRC:.cpp=.o) $(ASRC:.S=.o)
