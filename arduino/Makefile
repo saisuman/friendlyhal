@@ -5,9 +5,9 @@
 
 TARGET = friendlyhal
 # Change this to match your arduino installation directory
-INSTALL_DIR = $(HOME)/arduino
-PORT = /dev/ttyUSB0
-UPLOAD_RATE = 57600
+INSTALL_DIR = /usr/share/arduino
+PORT = /dev/ttyACM0
+UPLOAD_RATE = 115200 
 AVRDUDE_PROGRAMMER = stk500v1
 MCU = atmega328p
 F_CPU = 16000000
@@ -44,8 +44,10 @@ $(ARDUINO)/WMath.cpp \
 $(ARDUINO)/WString.cpp \
 $(ARDUINO)/main.cpp \
 $(ARDUINO_LIB)/EEPROM/EEPROM.cpp \
+$(ARDUINO_LIB)/Servo/Servo.cpp \
 TempHumSensor/TempHumSensor.cpp \
-PIRSensor/PIRSensor.cpp
+PIRSensor/PIRSensor.cpp \
+CameraMotor/CameraMotor.cpp
 
 CXX_APP = $(ARDUINO)/main.cpp
 MODULES = $(C_MODULES) $(CXX_MODULES)
@@ -69,8 +71,8 @@ CDEFS = -DF_CPU=$(F_CPU)L -DARDUINO=$(VERSION)
 CXXDEFS = -DF_CPU=$(F_CPU)L -DARDUINO=$(VERSION) -D__AVR_ATmega328P__
 
 # Place -I options here
-CINCS = -I$(ARDUINO)  -I$(VARIANTS) -I$(ARDUINO_LIB)
-CXXINCS = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB) -ITempHumSensor/ -IPIRSensor/
+CINCS = -I$(ARDUINO)  -I$(VARIANTS) -I$(ARDUINO_LIB) -I$(ARDUINO_LIB)/Servo -ITempHumSensor/ -IPIRSensor/ -ICameraMotor/
+CXXINCS = -I$(ARDUINO) -I$(VARIANTS) -I$(ARDUINO_LIB) -I$(ARDUINO_LIB)/Servo -ITempHumSensor/ -IPIRSensor/ -ICameraMotor/
 
 # Compiler flag to set the C Standard level.
 # c89   - "ANSI" C
@@ -114,7 +116,7 @@ AVRDUDE = $(AVRDUDE_PATH)/avrdude
 REMOVE = rm -f
 MV = mv -f
 
-OBJ_DEPS=$(ARDUINO)/HardwareSerial.o $(ARDUINO)/Print.o TempHumSensor/TempHumSensor.o PIRSensor/PIRSensor.o  $(ARDUINO)/wiring_digital.o
+OBJ_DEPS=$(ARDUINO)/HardwareSerial.o $(ARDUINO)/Print.o TempHumSensor/TempHumSensor.o PIRSensor/PIRSensor.o CameraMotor/CameraMotor.o  $(ARDUINO)/wiring_digital.o $(ARDUINO_LIB)/Servo/Servo.o $(ARDUINO)/WMath.o $(ARDUINO)/WString.o $(ARDUINO)/Stream.o
 
 # Define all object files.
 OBJ = $(SRC:.c=.o) $(CXXSRC:.cpp=.o) $(ASRC:.S=.o)
