@@ -14,8 +14,6 @@
 		PythonPath "sys.path+['/home/suman/dev/friendlyhal']"
 		Options Indexes FollowSymLinks MultiViews
 		AllowOverride None
-		Order allow,deny
-		allow from all
 	</Directory>
 
 	ErrorLog ${APACHE_LOG_DIR}/error.log
@@ -29,4 +27,14 @@
 	AddHandler mod_python .py
 	PythonHandler mod_python.publisher
   	PythonDebug On
+
+	<Location "/">
+		AuthType Basic
+		AuthName "Restricted Files"
+		AuthUserFile /home/suman/apachepasswd
+		Require user guest
+	</Location>
+
+
+
 </VirtualHost>
