@@ -101,7 +101,7 @@ AVRDUDE_WRITE_FLASH = -U flash:w:applet/main.hex
 
 AVRDUDE_FLAGS = -V -F -C $(INSTALL_DIR)/hardware/tools/avrdude.conf \
 -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) \
--b $(UPLOAD_RATE) -D
+-b $(UPLOAD_RATE) 
 
 # Program settings
 CC = $(AVR_TOOLS_PATH)/avr-gcc

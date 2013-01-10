@@ -64,10 +64,13 @@ void setup() {
   Serial.begin(9600);  
   tempHumSensor.init(PIN_TEMP_HUM_SENSOR);
   initEvent("Initialised temperature/humidity sensor.");
+  delay(1000);
   pirSensor.init(PIN_PIR_SENSOR);
   initEvent("Initialised PIR sensor.");
+  delay(1000);
   cameraMotor.init(PIN_CAMERA_MOTOR_ELEVATION);
   initEvent("Initialised camera motor.");
+  delay(1000);
 }
 
 bool cmp(const char *str1, const char *str2) {
@@ -110,6 +113,11 @@ void parseAndProcessCommand() {
   }
   inputBuf[bytesInBuffer] = 0;
 
+  if (bytesInBuffer > 0) {
+    Serial.print("There's more data");
+    Serial.println((char*)inputBuf);
+  }
+
   // Now, is there a command?
   if (cmp(commandBuf, CMD_PAN_UP)) {
     cameraMotor.panUp();
@@ -137,11 +145,13 @@ void loop() {
 
   if (pirSensor.motionDetected()) {
     dataEvent(DATA_MOTION, 1);
+  } else {
+    dataEvent(DATA_MOTION, 0);
   }
 
   // Now we'll read up whatever we can.
   int availableBytes = Serial.available();
-  if (availableBytes <= 0) {
+  if (availableBytes <= 0 && bytesInBuffer <= 0) {
     return;
   }
 

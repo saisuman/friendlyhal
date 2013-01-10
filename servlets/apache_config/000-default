@@ -1,16 +1,14 @@
 <VirtualHost *:80>
-	ServerAdmin webmaster@localhost
+	LoadModule proxy_module /usr/lib/apache2/modules/mod_proxy.so
 
-	# This is where we serve all the static images
-	# and files from.
+	ProxyPass /videofeed/ http://127.0.0.1:8080/
+
 	DocumentRoot /home/suman/dev/friendlyhal/ui
 	<Directory "/">
 		Options FollowSymLinks
 		AllowOverride None
 	</Directory>
 
-	# We use a cgi-bin directory for all the mod_python
-	# mappings.
 	Alias /cgi-bin/ /home/suman/dev/friendlyhal/servlets/
 	<Directory "/home/suman/dev/friendlyhal/servlets">
 		PythonPath "sys.path+['/home/suman/dev/friendlyhal']"
@@ -29,8 +27,6 @@
 	CustomLog ${APACHE_LOG_DIR}/access.log combined
 
 	AddHandler mod_python .py
-	# mod_python.publisher translates the URI directory path into
-	# a python module and method name.
 	PythonHandler mod_python.publisher
   	PythonDebug On
 </VirtualHost>

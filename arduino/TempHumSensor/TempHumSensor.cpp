@@ -62,7 +62,7 @@ bool TempHumSensor::refresh() {
   
   boolean bits[40];
   for (int i = 0; i < 40; ++i) {
-    unsigned long val = getTwiddleLength(9);
+    unsigned long val = getTwiddleLength(pin_);
     if (val == 0) {
       return false;  // Handle error.
     }

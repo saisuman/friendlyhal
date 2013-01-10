@@ -12,6 +12,9 @@ DATA_TEMPERATURE = 'temperature'
 DATA_HUMIDITY = 'humidity'
 DATA_MOTION = 'motion'
 
+COMMAND_PAN_UP = 'panup'
+COMMAND_PAN_DOWN = 'pandown'
+
 
 class Event(object):
     def __init__(self, event_type, event_source=None,

@@ -3,7 +3,10 @@
     <title>Friendly HAL</title>
     <script src="closure/closure/goog/base.js"></script>
     <script src="ui.js"></script>
-    <script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(friendlyhal.setupChartRefresh);
     </script>
     <link rel="stylesheet" type="text/css" href="style.css"/>
   </head>
@@ -13,38 +16,28 @@
 
     <div id="panel1" class="panel">
       <div class="paneltitle">Video</div>
-      <img class="videofeed"
-	   src="http://192.168.1.119:8080/?action=stream" />
+      <img class="videofeed" src="/videofeed/?action=stream" />
       <div class="buttonpanel">
 	<!--Panel only for buttons.-->
 	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_UP)"
 	     src="up.png"/>
 	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_DOWN)"
 	     src="down.png"/>
-	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_LEFT)"
-	     src="previous.png"/>
-	<img class="button" onclick="friendlyhal.pan(friendlyhal.PAN_RIGHT)"
-	     src="next.png"/>
       </div>
     </div>
 
-    <div id="panel2" class="panel">
-      <div class="paneltitle">Title2 of a nice panel</div>
-      Here is a few lines of text<br>
-      Here are a few more lines.
+    <div id="movementarea" class="chart" style="float:left;">
+      Loading Chart, please wait...
     </div>
-
-    <div class="applog">
-      <div class="paneltitle">Application Log</div>
-      <div id="applog" style="overflow: auto">
-      </div>
+    <div id="temperaturearea" class="chart" style="float:left;">
+      Loading Chart, please wait...
     </div>
-
-    <div class="eventlog">
-      <div class="paneltitle">HAL Event Log</div>
-      <div id="eventlog" style="overflow: auto">
-      </div>
+    <div id="humidityarea" class="chart" style="float: left;">
+      Loading Chart, please wait...
     </div>
     
   </body>
+  <script>
+    friendlyhal.start();
+  </script>
 </html>

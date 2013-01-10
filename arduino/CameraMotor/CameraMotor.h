@@ -7,7 +7,7 @@
 #include "Arduino.h"
 #include "Servo.h"
 
-#define INCREMENT_DEGREES 2
+#define INCREMENT_DEGREES 5
 #define INITIAL_POSITION_DEGREES 90
 
 class CameraMotor {
