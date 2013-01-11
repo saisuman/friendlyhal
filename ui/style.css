@@ -1,9 +1,22 @@
+@media screen,tv {
 body {
     font-family: Arial;
     color: white;
     background-color: black;
     padding: 1px;
     margin: 1px;
+    max-width: 500px;
+}
+}
+
+@media handheld {
+body {
+    font-family: Arial;
+    color: white;
+    background-color: black;
+    padding: 1px;
+    margin: 1px;
+}
 }
 
 h1 {
@@ -71,3 +84,4 @@ h1 {
     position: absolute;
     bottom: 5px;
 }
+

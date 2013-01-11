@@ -27,15 +27,11 @@ class TimeSeries(object):
                 # We downsample with "max", not "avg". Return the newest
                 # one where we have a choice.
                 def get_max(dp1, dp2):
-                    if dp1.value == dp2.value:
-                        if dp1.timestamp > dp2.timestamp:
-                            return dp1
-                        else:
-                            return dp2
-                    if dp1.value > dp2.value:
-                        return dp1
-                    return dp2
+		    max_ts = max(dp1.timestamp, dp2.timestamp)
+		    max_val = max(dp1.value, dp2.value)
+		    return DataPoint(timestamp=max_ts, value=max_val)
                 new_window.append(get_max(self.ts_window[i], self.ts_window[i+1]))
+		i += 2
             self.ts_window = new_window
 
     def to_array(self):
@@ -43,10 +39,13 @@ class TimeSeries(object):
 
 
 class DataPoint(object):
-    def __init__(self, data_event):
-        self.timestamp = data_event.timestamp
-        self.value = data_event.event_data
-
+    def __init__(self, data_event=None, timestamp=None, value=None):
+	if data_event:
+	  self.timestamp = data_event.timestamp
+          self.value = data_event.event_data
+	else:
+	  self.timestamp = timestamp
+	  self.value = value
 
 class ListenerThread(threading.Thread):
     def __init__(self, serial_port):
