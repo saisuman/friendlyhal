@@ -1,8 +1,10 @@
+CC=c++
+CFLAGS=-O3
 %.o: %.cc
-	$(CC) -c $^ -o $@
+	$(CC) $(CFLAGS) -c $^ -o $@
 
 video_streamer: video_streamer.o video_wrappers.o log_and_err_util.o
-	$(CC) \
+	$(CC) $(CFLAGS) \
 	video_streamer.o \
 	video_wrappers.o \
 	log_and_err_util.o \
