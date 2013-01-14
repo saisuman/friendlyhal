@@ -5,56 +5,19 @@ import os
 import threading
 import json
 
+import data
 import util
 
 LISTENER_SOCKET = '/tmp/controller_listener.socket'
-
-class TimeSeries(object):
-    TIMESERIES_WINDOW_SECONDS = 3600 * 4
-    MAX_VALUES = 200
-    def __init__(self):
-        self.ts_window = []
-
-    def add(self, data_point):
-        self.ts_window.append(data_point)
-        while (self.ts_window[0].timestamp - self.ts_window[-1].timestamp >
-            TimeSeries.TIMESERIES_WINDOW_SECONDS):
-            self.ts_window.pop(0)  # Lose the oldest one.
-        if len(self.ts_window) > TimeSeries.MAX_VALUES:
-            new_window = []
-            i = 0
-            while i < len(self.ts_window) - 2:
-                # We downsample with "max", not "avg". Return the newest
-                # one where we have a choice.
-                def get_max(dp1, dp2):
-		    max_ts = max(dp1.timestamp, dp2.timestamp)
-		    max_val = max(dp1.value, dp2.value)
-		    return DataPoint(timestamp=max_ts, value=max_val)
-                new_window.append(get_max(self.ts_window[i], self.ts_window[i+1]))
-		i += 2
-            self.ts_window = new_window
-
-    def to_array(self):
-        return [[t.timestamp, t.value] for t in self.ts_window]
-
-
-class DataPoint(object):
-    def __init__(self, data_event=None, timestamp=None, value=None):
-	if data_event:
-	  self.timestamp = data_event.timestamp
-          self.value = data_event.event_data
-	else:
-	  self.timestamp = timestamp
-	  self.value = value
 
 class ListenerThread(threading.Thread):
     def __init__(self, serial_port):
         threading.Thread.__init__(self)
         self.serial_port = serial_port
         self.data_timeseries = {
-            util.DATA_TEMPERATURE: TimeSeries(),
-            util.DATA_HUMIDITY: TimeSeries(),
-            util.DATA_MOTION: TimeSeries(),
+            util.DATA_TEMPERATURE: data.TimeSeries(),
+            util.DATA_HUMIDITY: data.TimeSeries(),
+            util.DATA_MOTION: data.TimeSeries(),
             }
 
     def run(self):
@@ -64,7 +27,7 @@ class ListenerThread(threading.Thread):
                 event = util.to_event(line.strip())
                 if isinstance(event, util.DataEvent):
                     self.data_timeseries[
-                        event.event_source].add(DataPoint(event))
+                        event.event_source].add(event.to_data_point())
                 print 'OK: %s' % event
             except util.MalformedEventException as ex:
                 print 'ERROR: %s' % ex
@@ -106,7 +69,7 @@ class ControllerListener(object):
                 # forward it to the serial port.
                 self.serial_port.write(data)
                 self.serial_port.write('\r')
-                self.serial_port.flushOutput()
+                self.serial_port.flush()
                 print('Relay: %s' % data)
             except Exception as e:
                 print('ERROR: Raised exception: %s' % e)

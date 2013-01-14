@@ -33,6 +33,9 @@ dataToDataTable = function(arr, opt_divBy100) {
     data.addColumn('datetime');
     data.addColumn('number');
     for (var i in arr) {
+	if (arr[i][1] == 0) {
+	    continue;  // Discard zeroes.
+	}
 	if (opt_divBy100) {
 	    data.addRow([new Date(arr[i][0] * 1000), arr[i][1]/100]);
 	} else {
@@ -50,7 +53,6 @@ friendlyhal.temperatureDataCallback = function(e) {
 	'curveType': 'function',
 	'title': 'Temperature',
 	'legend': 'none',
-	'backgroundColor': 'black',
 	'vAxis': { 'title': 'C', 'gridlines': { 'color': '#555' } },
 	'hAxis': { 'format': 'hh:mm', 'gridlines': { 'count': 0, 'color': '#555'} }
     };
@@ -62,10 +64,9 @@ friendlyhal.humidityDataCallback = function(e) {
     var chart = new google.visualization.LineChart(
 	document.getElementById('humidityarea'));
     var options = {
-	'curveType': 'function',
+	'curveType': null,
 	'title': 'Rel. Humidity',
 	'legend': 'none',
-	'backgroundColor': 'black',
 	'vAxis': { 'title': 'Rel. Humidity', 'gridlines': { 'color': '#555' }},
 	'hAxis': { 'format': 'hh:mm','gridlines': { 'count': 0 , 'color': '#555'} }
     };
@@ -74,13 +75,12 @@ friendlyhal.humidityDataCallback = function(e) {
 
 friendlyhal.motionDataCallback = function(e) {
     var obj = e.target.getResponseJson();
-    var chart = new google.visualization.LineChart(
+    var chart = new google.visualization.ScatterChart(
 	document.getElementById('movementarea'));
     var options = {
-	'curveType': 'function',
+	'curveType': null,
 	'title': 'Movement',
 	'legend': 'none',
-	'backgroundColor': 'black',
 	'vAxis': { 'title': 'Moves', 'gridlines': { 'color': '#555' }},
 	'hAxis': { 'format': 'hh:mm','gridlines': { 'count': 0, 'color': '#555'} }
     };
