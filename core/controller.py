@@ -5,6 +5,7 @@ import os
 import threading
 import json
 
+import data
 import util
 
 LISTENER_SOCKET = '/tmp/controller_listener.socket'
@@ -53,9 +54,9 @@ class ListenerThread(threading.Thread):
         threading.Thread.__init__(self)
         self.serial_port = serial_port
         self.data_timeseries = {
-            util.DATA_TEMPERATURE: TimeSeries(),
-            util.DATA_HUMIDITY: TimeSeries(),
-            util.DATA_MOTION: TimeSeries(),
+            util.DATA_TEMPERATURE: data.TimeSeries(),
+            util.DATA_HUMIDITY: data.TimeSeries(),
+            util.DATA_MOTION: data.TimeSeries(),
             }
 
     def run(self):
@@ -65,7 +66,7 @@ class ListenerThread(threading.Thread):
                 event = util.to_event(line.strip())
                 if isinstance(event, util.DataEvent):
                     self.data_timeseries[
-                        event.event_source].add(DataPoint(event))
+                        event.event_source].add(event.to_data_point())
                 print 'OK: %s' % event
             except util.MalformedEventException as ex:
                 print 'ERROR: %s' % ex
@@ -107,7 +108,7 @@ class ControllerListener(object):
                 # forward it to the serial port.
                 self.serial_port.write(data)
                 self.serial_port.write('\r')
-                self.serial_port.flushOutput()
+                self.serial_port.flush()
                 print('Relay: %s' % data)
             except Exception as e:
                 print('ERROR: Raised exception: %s' % e)

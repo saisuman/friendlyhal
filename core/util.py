@@ -1,6 +1,8 @@
 import logging
 import time
 
+import data
+
 SOURCE_TEMP_HUM_SENSOR = 'temp_hum_sensor'
 SOURCE_PIR_SENSOR = 'pir_sensor'
 
@@ -41,6 +43,10 @@ class DataEvent(Event):
         Event.__init__(self, event_type=EVENT_TYPE_DATA,
                        event_source=event_source,
                        event_data=event_data)
+
+    def to_data_point(self):
+        return data.DataPoint(timestamp=self.timestamp,
+                              value=self.event_data)
 
 
 class ErrorEvent(Event):
