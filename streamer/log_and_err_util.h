@@ -12,7 +12,7 @@ void checkFailed(int line, const char *file);
 
 #define debug(...) { if (DEBUG_MODE) { fprintf(stdout, "DEBUG: " __VA_ARGS__); fprintf(stdout, "\n"); } }
 #define ok(...) { fprintf(stdout, "OK: " __VA_ARGS__); fprintf(stdout, "\n"); }
-#define fatal(...) { fprintf(stderr, "FATAL: " __VA_ARGS__); fprintf(stdout, "\n"); exit(-1); }
+#define fatal(...) { fprintf(stderr, "FATAL: " __VA_ARGS__); fprintf(stderr, "\n"); exit(-1); }
 #define err(...) { \
   fprintf(stderr, "ERROR: " __VA_ARGS__); \
   fprintf(stderr, "\n"); \

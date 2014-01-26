@@ -24,12 +24,13 @@ class TimeSeries(object):
             new_window = []
             i = 0
             while i < len(self.ts_window) - 2:
-                # We downsample with "max", not "avg". Return the newest
+                # We downsample with "max", not "avg". Return the oldest
+		# one
                 # one where we have a choice.
                 def get_max(dp1, dp2):
-		    max_ts = max(dp1.timestamp, dp2.timestamp)
+		    min_ts = min(dp1.timestamp, dp2.timestamp)
 		    max_val = max(dp1.value, dp2.value)
-		    return DataPoint(timestamp=max_ts, value=max_val)
+		    return DataPoint(timestamp=min_ts, value=max_val)
                 new_window.append(get_max(self.ts_window[i], self.ts_window[i+1]))
 		i += 2
             self.ts_window = new_window

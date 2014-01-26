@@ -11,7 +11,20 @@ using std::string;
 
 int main(int argc, char **argv) {
   debug("Opening device.");
-  CaptureSource source("/dev/video0");
+  CaptureSource source("/dev/video1");
   source.InitOrDie();
   debug("Initialised.");
+  string filename("/tmp/crap.raw");
+  int f = open(filename.c_str(), O_WRONLY);
+  if (f < 0) {
+    perror("You is dead.");
+    return -1;
+  }
+  const int bufsize = 8 * 640 * 480;
+  for (int i = 0; i < 100; ++i) {
+    void *buf = malloc(bufsize);
+    size_t bytes = source.ReadFrame(buf, bufsize);
+    printf("Wrote %ld bytes.", write(f, buf, bytes));
+  }
+  close(f);
 }

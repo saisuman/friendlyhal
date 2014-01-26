@@ -47,7 +47,7 @@ friendlyhal.temperatureDataCallback = function(e) {
     var chart = new google.visualization.LineChart(
 	document.getElementById('temperaturearea'));
     var options = {
-	'curveType': 'function',
+	'curveType': null,
 	'title': 'Temperature',
 	'legend': 'none',
 	'backgroundColor': 'black',
@@ -62,7 +62,7 @@ friendlyhal.humidityDataCallback = function(e) {
     var chart = new google.visualization.LineChart(
 	document.getElementById('humidityarea'));
     var options = {
-	'curveType': 'function',
+	'curveType': null,
 	'title': 'Rel. Humidity',
 	'legend': 'none',
 	'backgroundColor': 'black',
@@ -74,10 +74,9 @@ friendlyhal.humidityDataCallback = function(e) {
 
 friendlyhal.motionDataCallback = function(e) {
     var obj = e.target.getResponseJson();
-    var chart = new google.visualization.LineChart(
+    var chart = new google.visualization.ScatterChart(
 	document.getElementById('movementarea'));
     var options = {
-	'curveType': 'function',
 	'title': 'Movement',
 	'legend': 'none',
 	'backgroundColor': 'black',

@@ -19,11 +19,12 @@ CaptureSource::CaptureSource(const string &video_device) {
 }
 
 CaptureSource::~CaptureSource() {
+
 }
 
 void CaptureSource::InitOrDie() {
   SetCaptureFormat();
-  MapBuffers(AllocateBuffers(2));
+  MapBuffers(AllocateBuffers(100));
 }
 
 // Just sends an ioctl to the v4l device with a bit of code
@@ -54,7 +55,6 @@ void CaptureSource::SetCaptureFormat() {
   if (!VideoCommand(VIDIOC_S_FMT, &fmt)) {
     fatal("Could not set up capture format.");
   }
-
   // Let's check if it's set correctly.
   if (fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_RGB24) {
     fatal("libv4l2 did not accept requested format. "
@@ -95,6 +95,7 @@ void CaptureSource::MapBuffers(int allocated_buffers) {
     v4l2_buffer buf;
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
+    buf.length = 3 * 640 * 480;  // 24 bpp x resolution.
     buf.index = i;
     VideoCommand(VIDIOC_QUERYBUF, &buf);
     void *mapped_ptr = v4l2_mmap(NULL, buf.length,
@@ -104,4 +105,35 @@ void CaptureSource::MapBuffers(int allocated_buffers) {
     buffers_.push_back(make_pair(mapped_ptr, buf.length));
   }
   ok("Mapped %d buffers.", allocated_buffers);
+
+  // After mapping them, enqueue them.
+  for (int i = 0; i < buffers_.size(); ++i) {
+    v4l2_buffer buf;
+    buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    buf.memory = V4L2_MEMORY_MMAP;
+    buf.index = i;
+    VideoCommand(VIDIOC_QBUF, &buf);
+  }
+  ok("Enqueued %ld buffers.", buffers_.size());
+
+  v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  CHECK(VideoCommand(VIDIOC_STREAMON, &type));
 }
+
+size_t CaptureSource::ReadFrame(void *target, size_t size) {
+  v4l2_buffer buf;
+  buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  buf.memory = V4L2_MEMORY_MMAP;
+  CHECK(VideoCommand(VIDIOC_DQBUF, &buf));
+  CHECK(buf.index < buffers_.size());
+  ok("Dequeued buffer number %d, size=%ld.", buf.index, buffers_[buf.index].second);
+  size_t to_copy = std::min(buffers_[buf.index].second, size);
+  memcpy(target, buffers_[buf.index].first, to_copy);
+  CHECK(VideoCommand(VIDIOC_QBUF, &buf));
+  return to_copy;
+}
+
+// void CaptureSource::StopCapture() {
+//   v4l2_buf_type type = V4L_BUF_TYPE_VIDEO_CAPTURE;
+//   CHECK(VideoCommand(VIDIOC_STREAMOFF, &type));
+// }
