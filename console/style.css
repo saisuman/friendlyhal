@@ -1,0 +1,47 @@
+body {
+
+}
+
+h1 {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 300;
+    font-size: 48px;
+    text-align: center;
+}
+
+.inline-icon {
+    width: 50px;
+    height: 50px;
+    padding-right: 10px;
+    margin-top: -5px;
+    padding-top: -5px;
+}
+
+.calendarentry {
+    border: 0px;
+    padding: 5px;
+    margin: 5px;
+}
+
+.calendarowner {
+    font-size: 42px;
+    font-weight: 300;
+    color: darkGreen;
+}
+
+.dateandtime {
+    text-align: center;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: bold;
+    font-size: 42px;
+    color: #000088;
+}
+
+.appointment {
+    text-align: center;
+    border-top: solid 2px lightGray;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 64px;
+    color: #454545;
+    margin-top: 50px;
+}

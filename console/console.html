@@ -1,0 +1,29 @@
+<html>
+  <head>
+    <title>Home Console</title>
+    <style>
+      .bareframe {
+        padding: 0px;
+        margin: 0px;
+        border: 0px;
+      }
+    </style>
+    <script>
+      function startup() {
+        setTimeout(function() {
+            document.getElementById('content').src = "test2.html";
+            alert("Changed!");
+        }, 5000);
+      }
+    </script>
+    <script src="controller.js"></script>
+  </head>
+
+  <body onload="controller.init()">
+
+    <iframe src="test1.html" id="content" width="100%" height="100%" class="bareframe">
+    </frame>
+
+  </body>
+
+</html>
