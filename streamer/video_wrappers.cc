@@ -6,7 +6,7 @@
 #include <string>
 #include <sys/mman.h>
 
-#include "log_and_err_util.h"
+#include <glog/logging.h>
 #include "video_wrappers.h"
 
 using std::string;
@@ -15,7 +15,7 @@ using std::make_pair;
 
 CaptureSource::CaptureSource(const string &video_device) {
   fd_ = v4l2_open(video_device.c_str(), O_RDWR|O_NONBLOCK);
-  CHECK_NONNEG(fd_);
+  CHECK_GE(fd_, 0);
 }
 
 CaptureSource::~CaptureSource() {
@@ -34,7 +34,7 @@ bool CaptureSource::VideoCommand(int command, void *data) {
     int ret = v4l2_ioctl(fd_, command, data);
     if (ret != -1) {
       return true;
-    } else if (WorthRetrying()) {
+    } else if (errno == EINTR || errno == EAGAIN) {
       continue;
     }
     return false;
@@ -50,25 +50,23 @@ void CaptureSource::SetCaptureFormat() {
   fmt.fmt.pix.width = 640;
   fmt.fmt.pix.height = 480;
   fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_RGB24;
-  fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
-  debug("Setting capture format.");
-  if (!VideoCommand(VIDIOC_S_FMT, &fmt)) {
-    fatal("Could not set up capture format.");
-  }
+  fmt.fmt.pix.field = V4L2_FIELD_NONE;
+  DLOG(INFO) << "Setting capture format.";
+  CHECK(VideoCommand(VIDIOC_S_FMT, &fmt))
+    << "Could not set up capture format.";
   // Let's check if it's set correctly.
-  if (fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_RGB24) {
-    fatal("libv4l2 did not accept requested format. "
-	  "Requested %d, got %d.",
-	  fmt.fmt.pix.pixelformat, V4L2_PIX_FMT_RGB24);
-  }
-
+  CHECK_EQ(fmt.fmt.pix.pixelformat, V4L2_PIX_FMT_RGB24)
+    << "libv4l2 did not accept requested format. "
+    << "Requested, obtained : "
+    << fmt.fmt.pix.pixelformat << ", " << V4L2_PIX_FMT_RGB24;
+  
   if (fmt.fmt.pix.width != 640 || fmt.fmt.pix.height != 480) {
-    err("Driver is not using requested length. "
-	"Requested %dx%d, getting %dx%d.",
-	640, 480, fmt.fmt.pix.width, fmt.fmt.pix.height);
+    LOG(WARNING) <<  "Driver is not using requested length. "
+		 << "Requested, getting : 640x480, "
+		 << fmt.fmt.pix.width << "," << fmt.fmt.pix.height;
   }
-  ok("Requested capture at %dx%d",
-     fmt.fmt.pix.width, fmt.fmt.pix.height);
+  DLOG(INFO) << "Requested capture at "
+	     << fmt.fmt.pix.width << "," << fmt.fmt.pix.height;
 }
 
 int CaptureSource::AllocateBuffers(int num_buffers) {
@@ -79,13 +77,9 @@ int CaptureSource::AllocateBuffers(int num_buffers) {
   req.count = num_buffers;
   req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   req.memory = V4L2_MEMORY_MMAP;  // TODO: Easy, but is it the most efficient?
-  if (!VideoCommand(VIDIOC_REQBUFS, &req)) {
-    fatal("Could not set up buffers.");
-  }
-  if (req.count == 0) {
-    fatal("We need a nonzero buffer count.");
-  }
-  ok("Requested %d buffers.", req.count);
+  CHECK(VideoCommand(VIDIOC_REQBUFS, &req)) << "Could not set up buffers.";
+  CHECK_GE(req.count, 0) << "We need a nonzero buffer count.";
+  DLOG(INFO) << "Requested " << req.count << " buffers.";
   return req.count;
 }
 
@@ -104,7 +98,7 @@ void CaptureSource::MapBuffers(int allocated_buffers) {
     CHECK(mapped_ptr != MAP_FAILED);
     buffers_.push_back(make_pair(mapped_ptr, buf.length));
   }
-  ok("Mapped %d buffers.", allocated_buffers);
+  DLOG(INFO) << "Mapped " << allocated_buffers << " buffers.";
 
   // After mapping them, enqueue them.
   for (int i = 0; i < buffers_.size(); ++i) {
@@ -114,7 +108,7 @@ void CaptureSource::MapBuffers(int allocated_buffers) {
     buf.index = i;
     VideoCommand(VIDIOC_QBUF, &buf);
   }
-  ok("Enqueued %ld buffers.", buffers_.size());
+  DLOG(INFO) << "Enqueued " << buffers_.size() << " buffers.";
 
   v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   CHECK(VideoCommand(VIDIOC_STREAMON, &type));
@@ -126,7 +120,8 @@ size_t CaptureSource::ReadFrame(void *target, size_t size) {
   buf.memory = V4L2_MEMORY_MMAP;
   CHECK(VideoCommand(VIDIOC_DQBUF, &buf));
   CHECK(buf.index < buffers_.size());
-  ok("Dequeued buffer number %d, size=%ld.", buf.index, buffers_[buf.index].second);
+  DLOG(INFO) << "Dequeued buffer number " << buf.index
+	     << " size= " << buffers_[buf.index].second;
   size_t to_copy = std::min(buffers_[buf.index].second, size);
   memcpy(target, buffers_[buf.index].first, to_copy);
   CHECK(VideoCommand(VIDIOC_QBUF, &buf));
